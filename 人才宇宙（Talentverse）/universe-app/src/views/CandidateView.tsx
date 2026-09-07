@@ -8,7 +8,7 @@ import { EvidenceMap } from '../components/EvidenceMap'
 import { candGreeting, candReply } from '../engine/flows'
 import { buildArchive, candidateChips } from '../data/universe'
 import { fmtRel, readStats, recordSignal } from '../lib/stats'
-import { load } from '../lib/storage'
+import { load, save } from '../lib/storage'
 import type { End, SignalKind } from '../types'
 
 const EVENT_LABEL: Record<string, { ic: string; text: string }> = {
@@ -20,7 +20,10 @@ const EVENT_LABEL: Record<string, { ic: string; text: string }> = {
 
 export function CandidateView({ credits, onSwitch }: { credits: string[]; onSwitch: (end: End) => void }) {
   const storedStep = load<{ step: number } | null>('cand', null)?.step ?? 0
-  const [mode, setMode] = useState<'portal' | 'chat'>(() => (storedStep >= 1 ? 'chat' : 'portal'))
+  const [mode, setMode] = useState<'portal' | 'chat'>(() => {
+    const saved = load<'portal' | 'chat'>('candMode', 'portal')
+    return saved === 'chat' || storedStep >= 1 ? 'chat' : 'portal'
+  })
   const [onboarded, setOnboarded] = useState<boolean>(storedStep >= 3)
   const [onboardTs, setOnboardTs] = useState(0)
   const [stats, setStats] = useState(readStats)
@@ -82,7 +85,10 @@ export function CandidateView({ credits, onSwitch }: { credits: string[]; onSwit
         }
         ctaLabel={storedStep >= 1 ? '继续补强我的档案 →' : '投第一颗星 →'}
         ctaSub={storedStep >= 1 ? '从上次停的地方接着来' : '30 秒，成为一颗雇主敢核的星'}
-        onStart={() => setMode('chat')}
+        onStart={() => {
+          save('candMode', 'chat')
+          setMode('chat')
+        }}
         cross={
           <div>
             那边是雇主的天 —— 只有你授权出示、且我核过的部分才会被它照到。

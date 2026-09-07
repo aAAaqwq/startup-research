@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { OrbitView } from './views/OrbitView'
 import { Backdrop } from './components/Backdrop'
-import { EmployerWorkspace, CandidateWorkspace } from './components/Workspace'
+import { AppWorkspace } from './components/Workspace'
 import { load, save, clearAll } from './lib/storage'
 import type { End } from './types'
 
@@ -72,13 +72,7 @@ export function App() {
       {end === 'orbit' ? (
         <OrbitView key={`orb-${resetN}`} credits={credits} onSwitch={switchEnd} />
       ) : (
-        <div className="frame" key={`fr-${resetN}`}>
-          {end === 'employer' ? (
-            <EmployerWorkspace credits={credits} onCredit={recordCredit} onSwitch={switchEnd} />
-          ) : (
-            <CandidateWorkspace credits={credits} onCredit={recordCredit} onSwitch={switchEnd} />
-          )}
-        </div>
+        <AppWorkspace key={`${end}-${resetN}`} end={end} credits={credits} onCredit={recordCredit} onSwitch={switchEnd} />
       )}
 
       <div className="legal">

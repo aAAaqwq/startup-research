@@ -7,7 +7,7 @@ import { SkyField, type SkyStarDef } from '../components/SkyField'
 import { empGreeting, empReply } from '../engine/flows'
 import { employerChips } from '../data/universe'
 import { recordSignal } from '../lib/stats'
-import { load } from '../lib/storage'
+import { load, save } from '../lib/storage'
 import type { End, SignalKind } from '../types'
 
 type Phase = 'idle' | 'scan' | 'silence' | 'lit'
@@ -26,7 +26,10 @@ export function EmployerView({
   onMeet?: () => void
 }) {
   const storedStep = load<{ step: number } | null>('emp', null)?.step ?? 0
-  const [mode, setMode] = useState<'portal' | 'chat'>(() => (storedStep >= 1 ? 'chat' : 'portal'))
+  const [mode, setMode] = useState<'portal' | 'chat'>(() => {
+    const saved = load<'portal' | 'chat'>('empMode', 'portal')
+    return saved === 'chat' || storedStep >= 1 ? 'chat' : 'portal'
+  })
   const [phase, setPhase] = useState<Phase>(() => (storedStep >= 1 ? 'lit' : 'idle'))
   const met = credits.some((c) => c.includes('约面'))
   const timers = useRef<number[]>([])
@@ -112,7 +115,10 @@ export function EmployerView({
         title={<>在夜空里要人，只给<span className="k">敢背书</span>的那几颗</>}
         lede="你给需求 → 黑暗只在授权 + 已核验的范围里，点亮刚好够格、且我敢背书的星。孤证 / 待补那颗，我既不给它亮、也不跟你收那部分的钱。"
         ctaLabel={storedStep >= 1 ? '继续（从上次停的地方）→' : '开始要人 →'}
-        onStart={() => setMode('chat')}
+        onStart={() => {
+          save('empMode', 'chat')
+          setMode('chat')
+        }}
         cross={
           <div>
             你看到的每颗星都来自对方授权出示 · 没有全量人才库。
