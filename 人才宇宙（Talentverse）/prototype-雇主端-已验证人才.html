@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Talentverse · 已验证人才 · 雇主端原型</title>
+<style>
+/* ============ 设计令牌（ast-cpo-ui-designer 交付，1:1 采用） ============ */
+:root{
+  --canvas:#F6F6F7; --surface:#FFFFFF; --surface-inset:#F1F1F3;
+  --hairline:rgba(0,0,0,.07); --hairline-strong:rgba(0,0,0,.14);
+  --scrim:rgba(23,23,26,.42);
+  --text-1:#1D1D1F; --text-2:#6E6E73; --text-3:#98989D; --text-disabled:#B3B3B8;
+  --teal-100:#DDF1EA; --teal-200:#C0E3D8; --teal-500:#158A79;
+  --teal-600:#0F7567; --teal-700:#0B5B4E; --teal-800:#0A4A40;
+  --ok-100:#E9F6EE; --ok-200:#BEE4CD; --ok-700:#1E7B4D;
+  --warn-100:#FBF1E1; --warn-200:#EED9AE; --warn-700:#9A6000;
+  --danger-100:#FDEBE8; --danger-200:#F2B8B2; --danger-700:#B3261E;
+  --seal:#C5362B; --seal-hover:#A62C24; --seal-100:#FBE7E4;
+  --ink:#1D1D1F; --ink-hover:#2C2C2E;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",Segoe UI,Roboto,Arial,sans-serif;
+  --r-sm:6px; --r-md:12px; --r-lg:16px; --r-pill:999px;
+  --sh-xs:0 1px 2px rgba(0,0,0,.04);
+  --sh-sm:0 2px 8px rgba(0,0,0,.05);
+  --sh-md:0 8px 24px rgba(0,0,0,.08);
+  --sh-lg:0 24px 48px -12px rgba(0,0,0,.16);
+  --eo:cubic-bezier(.16,1,.3,1);
+  --spring:cubic-bezier(.34,1.56,.64,1);
+  --fs-display:28px; --fs-h2:20px; --fs-title:17px; --fs-h3:15px;
+  --fs-body:15px; --fs-meta:13px; --fs-caption:12px; --fs-stat:22px; --fs-stat-lg:32px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+html,body{height:100%}
+body{font-family:var(--font);background:var(--canvas);color:var(--text-1);font-size:var(--fs-body);line-height:1.6}
+.tnum{font-variant-numeric:tabular-nums}
+a{color:var(--teal-600);text-decoration:none;cursor:pointer}
+a:hover{color:var(--teal-700)}
+button{font-family:inherit;cursor:pointer;border:none;background:none;font-size:inherit}
+::selection{background:var(--teal-100)}
+.hidden{display:none!important}
+.demo-tag{display:inline-block;font-size:11px;color:var(--text-2);border:1px dashed var(--hairline-strong);border-radius:var(--r-pill);padding:1px 8px;vertical-align:2px;background:var(--surface)}
+
+/* ============ 顶栏 / 主导航 ============ */
+.topbar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.82);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--hairline)}
+.topbar-inner{max-width:960px;margin:0 auto;padding:0 24px;height:58px;display:flex;align-items:center;gap:20px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px;letter-spacing:-.01em}
+.brand .mark{width:26px;height:26px;border-radius:8px;background:var(--teal-600);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+.tenant{color:var(--text-2);font-size:13px;border-left:1px solid var(--hairline-strong);padding-left:14px}
+.nav{margin-left:auto;display:flex;gap:4px}
+.nav button{padding:7px 14px;border-radius:var(--r-pill);font-size:14px;color:var(--text-2);transition:background .12s var(--eo),color .12s var(--eo)}
+.nav button:hover{background:rgba(0,0,0,.05);color:var(--text-1)}
+.nav button.on{background:var(--ink);color:#fff;font-weight:500}
+
+/* ============ 布局 ============ */
+.wrap{max-width:960px;margin:0 auto;padding:28px 24px 120px}
+.view{display:none}
+.view.on{display:block;animation:vin .2s var(--eo)}
+@keyframes vin{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.eyebrow{font-size:13px;color:var(--text-2);margin-bottom:6px}
+h1.page{font-size:var(--fs-display);font-weight:600;line-height:1.25;letter-spacing:-.02em;max-width:640px}
+.lede{color:var(--text-2);font-size:15px;max-width:600px;margin-top:10px}
+
+/* ============ 卡片 / 分区 ============ */
+.card{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--r-lg);padding:24px}
+.sec{margin-top:34px}
+.sec-h{display:flex;align-items:baseline;gap:10px;margin-bottom:14px}
+.sec-h h2{font-size:var(--fs-h2);font-weight:600;letter-spacing:-.015em}
+.sec-h .sub{color:var(--text-2);font-size:13px}
+
+/* ============ 稀有度摘要（S1 核心） ============ */
+.funnel{display:grid;grid-template-columns:1.1fr .9fr;gap:24px}
+@media(max-width:720px){.funnel{grid-template-columns:1fr}}
+.bignum{font-size:var(--fs-stat-lg);font-weight:600;letter-spacing:-.025em;line-height:1.1;font-variant-numeric:tabular-nums}
+.bignum.teal{color:var(--teal-700)}
+.numlabel{font-size:13px;color:var(--text-2);margin-top:4px}
+.rare-track{margin-top:20px;height:6px;background:var(--surface-inset);border-radius:var(--r-pill);overflow:hidden}
+.rare-fill{height:100%;background:var(--teal-600);border-radius:var(--r-pill);width:0;transition:width .5s var(--eo)}
+.rare-legend{display:flex;gap:18px;margin-top:10px;font-size:12px;color:var(--text-2)}
+.rare-legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px}
+.quote{margin-top:14px;font-size:13px;color:var(--text-2);border-left:2px solid var(--hairline-strong);padding-left:12px}
+
+/* ============ 已验证卡 ============ */
+.vcard{position:relative;background:var(--surface);border:1px solid var(--hairline);border-left:3px solid var(--teal-600);border-radius:var(--r-lg);padding:20px 22px;margin-bottom:14px;transition:box-shadow .15s var(--eo),transform .15s var(--eo)}
+.vcard:hover{box-shadow:var(--sh-sm);transform:translateY(-1px)}
+.vcard-head{display:flex;align-items:flex-start;gap:12px}
+.vcard .who{font-size:var(--fs-title);font-weight:600}
+.vcard .meta{font-size:13px;color:var(--text-2)}
+.vcard .why{margin-top:10px;font-size:14px;color:var(--text-1)}
+.vcard .why b{color:var(--teal-700);font-weight:600}
+.boundary{margin-top:8px;font-size:13px;color:var(--text-2);display:flex;gap:6px}
+.tags{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.tag{font-size:12px;color:var(--text-1);background:var(--surface-inset);border-radius:var(--r-pill);padding:2px 10px}
+.dims{display:flex;gap:14px;margin-top:14px;padding-top:14px;border-top:1px solid var(--hairline);font-size:12px;color:var(--text-2);flex-wrap:wrap}
+.dims b{color:var(--text-1);font-variant-numeric:tabular-nums}
+.vcard .go{margin-top:16px;display:flex;align-items:center;gap:8px;font-size:14px;color:var(--teal-600);font-weight:500}
+.solo-note{font-size:12px;color:var(--text-2)}
+
+/* ============ 按钮 ============ */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:500;border-radius:var(--r-md);height:40px;padding:0 20px;transition:background .12s var(--eo),border-color .12s var(--eo),transform .12s var(--eo);white-space:nowrap}
+.btn:disabled{background:var(--surface-inset);color:var(--text-disabled);cursor:not-allowed}
+.btn.primary{background:var(--ink);color:#fff}
+.btn.primary:hover{background:var(--ink-hover)}
+.btn.primary:active{background:#000;transform:scale(.99)}
+.btn.primary.lg{height:48px;font-size:15px}
+.btn.secondary{background:#fff;border:1px solid var(--hairline-strong);color:var(--text-1)}
+.btn.secondary:hover{background:#F7F7F8;border-color:rgba(0,0,0,.2)}
+.btn.ghost{color:var(--text-2);height:36px;padding:0 14px}
+.btn.ghost:hover{background:rgba(0,0,0,.05);color:var(--text-1)}
+.btn.teal{background:var(--teal-600);color:#fff}
+.btn.teal:hover{background:var(--teal-700)}
+.btn:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(15,117,103,.35)}
+
+/* ============ 徽章体系 ============ */
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500}
+.badge .seal{width:16px;height:16px;border-radius:5px;background:var(--teal-600);display:inline-flex;align-items:center;justify-content:center;flex:none}
+.badge .seal svg{display:block}
+.badge.verified{color:var(--teal-700)}
+.badge.solo .ring{width:16px;height:16px;border-radius:5px;border:1.5px dashed var(--warn-700);display:inline-flex;align-items:center;justify-content:center;flex:none}
+.badge.solo .ring i{width:4px;height:4px;border-radius:50%;background:var(--warn-700);display:block}
+.badge.solo{color:var(--warn-700)}
+.badge.pending{color:var(--text-2)}
+.badge.pending .ring{width:16px;height:16px;border-radius:5px;border:1px solid var(--text-disabled);display:inline-flex;align-items:center;justify-content:center;flex:none;font-size:11px;line-height:1}
+.cap{font-size:var(--fs-caption);color:var(--text-3)}
+
+/* ============ 担保条 ============ */
+.guar{display:flex;align-items:center;gap:16px;border:1px solid var(--hairline-strong);border-radius:var(--r-lg);background:var(--surface);padding:16px 18px;margin-top:20px}
+.guar .stamp{width:38px;height:38px;border-radius:9px;background:var(--seal);color:#fff;font-weight:600;font-size:15px;display:flex;align-items:center;justify-content:center;flex:none}
+.guar .g-title{font-size:15px;font-weight:600}
+.guar .g-sub{font-size:13px;color:var(--text-2)}
+.guar .g-link{margin-left:auto;font-size:13px;flex:none}
+
+/* ============ 抽屉（证据卷） ============ */
+.scrim{position:fixed;inset:0;background:var(--scrim);opacity:0;pointer-events:none;transition:opacity .2s var(--eo);z-index:60}
+.scrim.on{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(560px,94vw);background:var(--surface);z-index:70;transform:translateX(105%);transition:transform .22s var(--eo);display:flex;flex-direction:column;box-shadow:var(--sh-lg)}
+.drawer.on{transform:none}
+.drawer-head{padding:20px 24px;border-bottom:1px solid var(--hairline);display:flex;align-items:flex-start;gap:12px}
+.drawer-body{flex:1;overflow-y:auto;padding:20px 24px 32px}
+.drawer-x{margin-left:auto;flex:none;width:32px;height:32px;border-radius:50%;color:var(--text-2);font-size:18px;display:flex;align-items:center;justify-content:center}
+.drawer-x:hover{background:var(--surface-inset);color:var(--text-1)}
+
+/* 证据分节 */
+.ev{margin-top:12px;border:1px solid var(--hairline);border-radius:var(--r-md);overflow:hidden;background:var(--surface)}
+.ev-head{width:100%;display:flex;align-items:center;gap:12px;padding:14px 16px;text-align:left}
+.ev-head .lab{font-size:14px;font-weight:600;flex:1}
+.ev-head .when{font-size:12px;color:var(--text-2);flex:none}
+.ev-head .chev{flex:none;transition:transform .18s var(--eo);color:var(--text-2)}
+.ev.open .chev{transform:rotate(180deg)}
+.ev-body{display:grid;grid-template-rows:0fr;transition:grid-template-rows .18s var(--eo)}
+.ev.open .ev-body{grid-template-rows:1fr}
+.ev-body>div{overflow:hidden}
+.ev-inner{padding:0 16px 14px;font-size:14px;color:var(--text-1)}
+.ev-inner .k{color:var(--text-2);font-size:13px}
+.ev-inner ul{margin:8px 0 0 0;padding-left:0;list-style:none}
+.ev-inner li{display:flex;gap:10px;padding:5px 0;border-bottom:1px solid var(--hairline);font-size:13px}
+.ev-inner li:last-child{border-bottom:none}
+.ev-inner li span:first-child{flex:none;color:var(--text-2);font-variant-numeric:tabular-nums;font-size:12px;padding-top:2px}
+.miss{background:var(--surface-inset);border-radius:var(--r-md);padding:10px 12px;font-size:13px;color:var(--text-2);margin-top:8px}
+.miss b{color:var(--text-1)}
+.disp-note{font-size:12px;color:var(--text-2);background:var(--surface-inset);border-radius:var(--r-md);padding:10px 12px;margin-top:16px}
+
+/* ============ 模态 / 下单 wizard ============ */
+.modal{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;padding:24px}
+.modal.on{display:flex}
+.modal-card{background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--sh-lg);width:min(600px,100%);max-height:90vh;overflow-y:auto;animation:pop .26s var(--spring)}
+@keyframes pop{from{opacity:0;transform:translateY(12px) scale(.985)}to{opacity:1;transform:none}}
+.steps{display:flex;align-items:center;gap:8px;padding:20px 24px 16px}
+.steps .st{width:24px;height:24px;border-radius:50%;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex:none;background:var(--surface-inset);color:var(--text-3)}
+.steps .st.done{background:var(--teal-600);color:#fff}
+.steps .st.now{background:#fff;border:2px solid var(--teal-600);color:var(--teal-700)}
+.steps .bar{flex:1;height:1px;background:var(--hairline-strong)}
+.steps .bar.on{background:var(--teal-200)}
+.steps .lbl{font-size:13px;color:var(--text-1);white-space:nowrap}
+.modal-body{padding:6px 24px 24px}
+.fee-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--hairline)}
+.fee-row .k{color:var(--text-2);font-size:14px}
+.fee-row .v{font-size:15px;font-weight:600;text-align:right}
+.fee-row .v small{display:block;font-size:12px;font-weight:400;color:var(--text-3)}
+.sticky-cta{position:fixed;left:0;right:0;bottom:0;z-index:50;background:rgba(255,255,255,.82);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--hairline)}
+.sticky-cta .in{max-width:960px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:16px}
+.sticky-cta .sum{font-size:13px;color:var(--text-2)}
+.sticky-cta .sum b{font-size:18px;color:var(--text-1);font-variant-numeric:tabular-nums}
+
+/* 盖章成功态 */
+.stamp-overlay{position:fixed;inset:0;z-index:90;background:var(--scrim);display:none;align-items:center;justify-content:center}
+.stamp-overlay.on{display:flex}
+.stamp-card{background:var(--surface);border-radius:var(--r-lg);padding:40px 44px;text-align:center;box-shadow:var(--sh-lg);animation:pop .3s var(--spring)}
+.stamp-circle{width:64px;height:64px;border-radius:50%;background:var(--teal-600);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;animation:stampin .3s var(--spring)}
+@keyframes stampin{0%{transform:scale(.6)}60%{transform:scale(1.08)}100%{transform:scale(1)}}
+
+/* ============ 订单 / 时间线 ============ */
+.ocard{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--r-lg);padding:20px 22px;margin-bottom:14px}
+.ohead{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.ostatus{font-size:12px;font-weight:600;border-radius:var(--r-pill);padding:2px 10px}
+.ostatus.live{background:var(--teal-100);color:var(--teal-700)}
+.ostatus.war{background:var(--seal-100);color:var(--seal)}
+.ostatus.grey{background:var(--surface-inset);color:var(--text-2)}
+.timeline{margin-top:16px;position:relative;padding-left:22px}
+.timeline::before{content:"";position:absolute;left:5px;top:6px;bottom:6px;width:1px;background:var(--hairline-strong)}
+.tl-item{position:relative;padding:6px 0;font-size:14px;display:flex;gap:10px;align-items:baseline}
+.tl-item::before{content:"";position:absolute;left:-21px;top:12px;width:9px;height:9px;border-radius:50%;background:var(--surface-inset);border:2px solid var(--text-disabled)}
+.tl-item.lit{color:var(--text-1)}
+.tl-item.lit::before{background:var(--teal-600);border-color:var(--teal-600)}
+.tl-item .when{color:var(--text-3);font-size:12px;margin-left:auto;flex:none}
+.tl-item .who-lbl{color:var(--text-2)}
+.next{font-size:13px;color:var(--text-2);background:var(--surface-inset);border-radius:var(--r-md);padding:10px 14px;margin-top:14px}
+.next b{color:var(--text-1)}
+
+/* ============ 保用期 ============ */
+.warrant-grid{display:grid;grid-template-columns:280px 1fr;gap:24px;align-items:start}
+@media(max-width:720px){.warrant-grid{grid-template-columns:1fr}}
+.ringwrap{text-align:center;padding:8px 0}
+.ring-cap{font-size:13px;color:var(--text-2);margin-top:14px}
+.rv-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--hairline)}
+.rv-row .lab{flex:1;font-size:14px}
+.rv-seg{display:flex;gap:6px}
+.dot{width:22px;height:22px;border-radius:5px;background:var(--surface-inset);cursor:pointer;transition:background .12s var(--eo)}
+.dot.on{background:var(--teal-600)}
+
+/* 底部小字 */
+.foot{margin-top:34px;font-size:12px;color:var(--text-3);border-top:1px solid var(--hairline);padding-top:16px;line-height:1.7}
+.foot b{color:var(--text-2)}
+.linkrow{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font-size:13px}
+
+/* 空态 */
+.empty{padding:34px;border:1px dashed var(--hairline-strong);border-radius:var(--r-lg);text-align:left;background:var(--surface)}
+.empty .big{font-size:var(--fs-stat-lg);font-weight:600;letter-spacing:-.025em}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ===================== 顶栏 ===================== -->
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><span class="mark">✓</span>Talentverse<span style="font-weight:400;color:var(--text-2);font-size:13px">· 验证交付台</span></div>
+    <div class="tenant">海升科技（出海 AI · 演示租户）<span class="demo-tag">原型演示</span></div>
+    <div class="nav" id="nav">
+      <button data-v="pool" class="on">人才池</button>
+      <button data-v="jobs">岗位</button>
+      <button data-v="orders">服务单</button>
+    </div>
+  </div>
+</div>
+
+<main class="wrap">
+
+<!-- ===================== S1 人才池 ===================== -->
+<section class="view on" id="view-pool">
+  <div class="eyebrow">你的池子 · bole 已导入 · 最近同步 今天 09:12</div>
+  <h1 class="page">你的 6,685 条里，只有被我们验证过的几个，才敢签风险返还。</h1>
+  <p class="lede">这个产品不是简历库。我们只把针对你真实在招的岗、验证到"敢让你约面"的人送到你面前——其余的人不在这里，不代表不行，只代表还没验证，我们不会拿没验证的人收你的钱。</p>
+
+  <div class="funnel" style="margin-top:26px">
+    <div class="card">
+      <div class="bignum teal tnum" id="statV">2</div>
+      <div class="numlabel">已验证通过 · 证据链完整 + 人工终审</div>
+      <div class="rare-track"><div class="rare-fill" id="rareBar"></div></div>
+      <div class="rare-legend">
+        <span><i style="background:var(--teal-600)"></i>已验证 2</span>
+        <span><i style="background:var(--surface-inset)"></i>原始候选 6,685</span>
+      </div>
+      <div class="quote">其中 6,683 条为未经验证的简历线索。数据口径：bole 全库，截至 2026-09-07。</div>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;justify-content:center">
+      <div class="bignum tnum">30<small style="font-size:15px;color:var(--text-3)">天</small></div>
+      <div class="numlabel">入职后保用期 · 不合适可换可退</div>
+      <div style="margin-top:18px" class="guar" style="border:none;padding:0;margin-top:18px">
+        <div class="stamp" style="width:34px;height:34px">保</div>
+        <div style="font-size:13px;color:var(--text-2)">入职 30 天内证明不了能干活——<b style="color:var(--text-1)">免费换人，或退成单费。</b></div>
+      </div>
+      <button class="btn primary lg" style="margin-top:18px" onclick="goJob()">选一个真实在招的岗，开始验证 →</button>
+      <div class="linkrow">
+        <a onclick="openInfo('def')">"已验证"的定义</a>
+        <a onclick="openInfo('guar')">风险返还细则</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>已验证候选人</h2><span class="sub">全部经 AI 复核 + 真人多轮 + 人工终审 · 联系方式仅下单后按授权解锁</span></div>
+    <div class="vcard" onclick="openEvidence('lin')" style="cursor:pointer">
+      <div class="vcard-head">
+        <div style="flex:1">
+          <div class="who">林 · 化名 Lin</div>
+          <div class="meta">后端 / 推理服务优化 · 8 年 · 目标出海远程</div>
+        </div>
+        <span class="badge verified"><span class="seal"><svg width="9" height="9" viewBox="0 0 10 10"><path d="M1 5.5 4 8l5-6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>已验证</span>
+      </div>
+      <div class="why">与本岗方向<b>对得上</b>：两轮真人技术问答 + 一次实操全部落在推理服务与高并发上；边界如实写——<b>未见大规模生产压测与英文协作样本</b>，建议面试覆盖。</div>
+      <div class="tags"><span class="tag">Go</span><span class="tag">vLLM / 推理服务</span><span class="tag">高并发 API</span></div>
+      <div class="dims"><span>自证材料 <b>3</b></span><span>真人多轮 <b>2</b></span><span>实操 <b>1</b></span><span>反作弊 <b>已核</b></span><span>人工复核 <b>已签</b></span></div>
+      <div class="go">查看验证证据（凭什么信他）→</div>
+    </div>
+
+    <div class="vcard" onclick="openEvidence('wang')" style="cursor:pointer">
+      <div class="vcard-head">
+        <div style="flex:1">
+          <div class="who">王 · 化名 Wang</div>
+          <div class="meta">Python / 分布式任务 · 6 年 · 有北美远程协作经验</div>
+        </div>
+        <span class="badge verified"><span class="seal"><svg width="9" height="9" viewBox="0 0 10 10"><path d="M1 5.5 4 8l5-6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>已验证</span>
+      </div>
+      <div class="why">真实做过<b>跨时区异步协作</b>，Python 后端与消息队列扎实；<b>本轮未含编码实操</b>，建议以一次 onsite 实作覆盖——我们如实标注，不凑数。</div>
+      <div class="tags"><span class="tag">Python</span><span class="tag">异步 / Celery</span><span class="tag">出海远程</span></div>
+      <div class="dims"><span>自证材料 <b>2</b></span><span>真人多轮 <b>1</b></span><span>实操 <b>0（未含）</b></span><span>反作弊 <b>已核</b></span><span>人工复核 <b>已签</b></span></div>
+      <div class="go">查看验证证据（凭什么信他）→</div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>原始池</h2><span class="sub">bole 导入的未验证原材料 · 非已验证人才 · 仅限内部查看</span></div>
+    <div class="empty">
+      <div class="big tnum" style="color:var(--text-1)">6,683</div>
+      <div class="numlabel">尚未验证</div>
+      <p style="margin-top:12px;color:var(--text-2);font-size:14px">这份"量"帮不了你做决定——6,685 → 2 次约面是旧方式的真实结局。我们不渲染它，只在它通过<a onclick="openInfo('def')">验证流程</a>后放行到这里。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== S2/S3 岗位 ===================== -->
+<section class="view" id="view-jobs">
+  <div class="eyebrow">真 JD 是验证的唯一锚</div>
+  <h1 class="page">海外 AI 后端工程师（远程）</h1>
+  <p class="lede">按这份 JD 验证，不是泛泛打分。JD 越真，验证越能回答"他能不能干你这份活"。</p>
+
+  <div class="card" style="margin-top:22px">
+    <div class="ohead">
+      <b style="font-size:15px">海外 AI 后端工程师（远程 · 出海创业公司）</b>
+      <span class="ostatus live">已关联 2 名已验证</span>
+      <a class="demo-tag" style="border-color:var(--hairline-strong);cursor:default">演示 JD</a>
+    </div>
+    <div style="margin-top:12px;font-size:14px;color:var(--text-2);line-height:1.9">
+      <b style="color:var(--text-1)">方向：</b>后端 / 推理服务优化<br>
+      <b style="color:var(--text-1)">技术栈：</b>Go 或 Python、vLLM / 推理服务、高并发 API、Postgres<br>
+      <b style="color:var(--text-1)">工作方式：</b>出海远程 · 时区重叠 ≥4h · 英文书面沟通<br>
+      <b style="color:var(--text-1)">薪资带（示例，锚成单费）：</b>35–50K × 14 · 计费口径按《服务委托书》
+    </div>
+    <div class="dims" style="border-top:none;padding-top:8px"><span>已验证 <b>2</b></span><span>验证中 <b>1</b></span><span>原始未验证 <b>6,683</b></span></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>该岗·已验证精选</h2><span class="sub">只给能让你约面的人</span></div>
+
+    <div class="vcard" onclick="openEvidence('lin')" style="cursor:pointer">
+      <div class="vcard-head">
+        <div style="flex:1"><div class="who">Lin</div><div class="meta">Go · vLLM 推理优化</div></div>
+        <span class="badge verified"><span class="seal"><svg width="9" height="9" viewBox="0 0 10 10"><path d="M1 5.5 4 8l5-6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>已验证</span>
+      </div>
+      <div class="why">匹配理由（人复核撰写）：两轮问答 + 实操全落在 <b>推理服务与高并发</b>；缺口 = 生产压测规模与英文协作，已建议面试补。</div>
+      <div class="go">看证据卷 → <span style="color:var(--text-3);font-weight:400">或</span>　<a class="btn secondary" style="height:36px;padding:0 14px;font-size:13px" onclick="event.stopPropagation();goOrder('lin')">推进这位 · 就此岗下单</a></div>
+    </div>
+
+    <div class="vcard" onclick="openEvidence('wang')" style="cursor:pointer">
+      <div class="vcard-head">
+        <div style="flex:1"><div class="who">Wang</div><div class="meta">Python · 分布式 · 出海远程经验</div></div>
+        <span class="badge verified"><span class="seal"><svg width="9" height="9" viewBox="0 0 10 10"><path d="M1 5.5 4 8l5-6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>已验证</span>
+      </div>
+      <div class="why">匹配理由：跨时区协作经验是该岗加分项；Python 后端扎实。<b>实操 0（本轮未含）</b>——建议约面用一次实作覆盖。</div>
+      <div class="go">看证据卷 → <span style="color:var(--text-3);font-weight:400">或</span>　<a class="btn secondary" style="height:36px;padding:0 14px;font-size:13px" onclick="event.stopPropagation();goOrder('wang')">推进这位 · 就此岗下单</a></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>验证中</h2><span class="sub">预计数天 · 不承诺准点，过而不入不凑数</span></div>
+    <div class="ocard">
+      <div class="ohead"><b style="font-size:14px">1 名候选 · 针对本岗</b><span class="ostatus grey">实操作答中 · 第 3/5 步</span></div>
+      <div class="timeline">
+        <div class="tl-item lit"><span>已收自证材料</span><span class="when">昨天</span></div>
+        <div class="tl-item lit"><span>真人多轮技术问答</span><span class="when">今天 08:40</span></div>
+        <div class="tl-item lit"><span>实操任务发放</span><span class="when">今天 10:05</span></div>
+        <div class="tl-item"><span>反作弊核查</span></div>
+        <div class="tl-item"><span>人工复核终审</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>想让池子更满？</h2><span class="sub">两种情况都收：从你的池子里验证，或我们按岗找新的</span></div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap">
+      <button class="btn secondary" onclick="goOrder('pool')">从我的原始池定向验证</button>
+      <button class="btn secondary" onclick="goOrder('search')">委托我们按岗寻访 + 验证</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== S6 服务单 ===================== -->
+<section class="view" id="view-orders">
+  <div class="eyebrow">你的委托 · 每单 = 一个真 JD</div>
+  <h1 class="page">服务单</h1>
+  <p class="lede">进行中 n · 保用期 n · 需你处理 n——下一步该谁动，一眼看清。</p>
+
+  <div class="sec" id="orderLiveEmpty">
+    <div class="empty">
+      <div class="big tnum" style="color:var(--text-1)">还没有服务单</div>
+      <p style="margin-top:10px;color:var(--text-2);font-size:14px">一个真实在招岗 + 一位已验证候选人，就是我们接单的最小单位。先选岗，或先从已验证里推进一位。</p>
+      <div style="margin-top:16px;display:flex;gap:10px"><button class="btn primary" onclick="goJob()">选岗开始 →</button><button class="btn secondary" onclick="openEvidence('lin')">先看一位已验证的证据</button></div>
+    </div>
+  </div>
+
+  <!-- 下单成功后点亮 -->
+  <div class="sec hidden" id="orderLive">
+    <div class="sec-h"><h2>进行中</h2><span class="sub">刚创建 · 启动承诺金已收</span></div>
+    <div class="ocard" style="border-left:3px solid var(--teal-600)">
+      <div class="ohead">
+        <b style="font-size:15px">海外 AI 后端工程师（远程）</b>
+        <span class="ostatus live">寻访 / 验证中</span>
+        <span class="demo-tag" id="orderCand">推进 Lin</span>
+      </div>
+      <div class="timeline">
+        <div class="tl-item lit"><span>服务单创建 · 启动承诺金已收</span><span class="when">刚刚</span></div>
+        <div class="tl-item lit"><span>候选人定向验证 / 推进中</span><span class="when who-lbl">我们正在做，预计数天</span></div>
+        <div class="tl-item"><span>交付（约面 → offer → 入职）</span></div>
+        <div class="tl-item"><span>保用期（30 天）</span></div>
+      </div>
+      <div class="next"><b>下一步该我们动：</b>推进验证与约面安排。逾期可随时<a>催办（转人工）</a>。</div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>保用期</h2><span class="sub">已入职、正在保用窗口的单</span></div>
+    <div class="ocard" style="border-left:3px solid var(--seal)">
+      <div class="ohead">
+        <b style="font-size:15px">海外 AI 后端工程师（远程）</b>
+        <span class="ostatus war">保用期中 · 剩 18 天</span>
+        <span class="demo-tag">演示填充数据</span>
+      </div>
+      <div class="next" style="margin-top:10px"><b>候选人：</b>Zhao · 2026-08-20 入职　<b>下一步该你动：</b>第 30 天复核提交，或现在就申请换 / 退。</div>
+      <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn secondary" onclick="show('warranty')">打开保用期管理 →</button>
+        <button class="btn ghost" onclick="openInfo('guar')">风险返还细则</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== S7 保用期 ===================== -->
+<section class="view" id="view-warranty">
+  <button class="btn ghost" style="margin-bottom:14px" onclick="show('orders')">← 返回服务单</button>
+  <div class="eyebrow">风险返还 · 有界面的保障出口</div>
+  <h1 class="page">保用期管理</h1>
+
+  <div class="warrant-grid" style="margin-top:22px">
+    <div class="card ringwrap">
+      <div id="ring"></div>
+      <div class="ring-cap">入职 2026-08-20 · 保用期 30 天<br>倒计时不是促销，是保障窗口</div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="sec-h" style="margin-bottom:8px"><h2 style="font-size:17px">雇主侧复核结论</h2><span class="sub">只针对本岗工作表现，用于触发协议约定的换 / 退，不构成对候选人的普遍评价</span></div>
+        <div style="font-size:13px;color:var(--text-2);margin-bottom:4px">上手速度</div>
+        <div class="rv-seg" style="margin-bottom:14px" data-k="speed"></div>
+        <div style="font-size:13px;color:var(--text-2);margin-bottom:4px">代码质量</div>
+        <div class="rv-seg" style="margin-bottom:14px" data-k="code"></div>
+        <div style="font-size:13px;color:var(--text-2);margin-bottom:4px">沟通与协作</div>
+        <div class="rv-seg" style="margin-bottom:4px" data-k="comm"></div>
+        <div style="margin-top:12px;font-size:12px;color:var(--text-3)">结果将去敏回写评估（岗位方向 / 评估方法 / 效果），用于校准验证，不暴露个人。</div>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:16px;flex-wrap:wrap">
+        <button class="btn primary" onclick="openWarrantyConfirm('ok')">确认胜任 · 结算尾款</button>
+        <button class="btn secondary" style="color:var(--seal);border-color:rgba(197,54,43,.35)" onclick="openWarrantyConfirm('swap')">申请换人（优先 · 免费再推）</button>
+        <button class="btn secondary" onclick="openWarrantyConfirm('refund')">申请退款（按协议）</button>
+      </div>
+      <div class="foot" style="border:none;padding-top:0;margin-top:16px"><b>说明：</b>换人 / 退款均需人工复核，不做一键冲动动作；具体权利义务以《服务委托书》为准。</div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ===================== 底部承诺条 ===================== -->
+<div class="sticky-cta hidden" id="sticky">
+  <div class="in">
+    <div class="sum" style="flex:1">当前：<b id="stickyWho">—</b><br><span style="font-size:12px">成单费按此岗薪资区间收 20–30% · 含退换担保</span></div>
+    <button class="btn primary" style="height:48px" onclick="goOrder('cand')">就此岗下单，推他进面试 →</button>
+  </div>
+</div>
+
+<!-- ===================== 证据抽屉 ===================== -->
+<div class="scrim" id="scr-ev" onclick="closeDrawer()"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-head">
+    <div style="flex:1">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="who" style="font-size:17px;font-weight:600" id="dWho">Lin</span>
+        <span class="badge verified"><span class="seal"><svg width="9" height="9" viewBox="0 0 10 10"><path d="M1 5.5 4 8l5-6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>已验证</span>
+      </div>
+      <div class="meta" style="color:var(--text-2);font-size:13px" id="dMeta">本次验证针对：海外 AI 后端工程师（远程）</div>
+    </div>
+    <button class="drawer-x" onclick="closeDrawer()">×</button>
+  </div>
+  <div class="drawer-body">
+    <div class="disp-note" id="dLock">🔒 联系方式未解锁：候选人已就本岗位、仅向贵雇主单独授权披露能力证据与联系方式——<b>下单并完成授权后解锁</b>。跨境披露按《个人信息保护法》办理，候选人可随时撤回。</div>
+
+    <div class="card" style="margin-top:14px;padding:16px">
+      <div style="font-size:13px;color:var(--text-2)">匹配小结 · 人复核员撰写</div>
+      <div style="font-size:14px;margin-top:6px" id="dWhy"></div>
+    </div>
+
+    <!-- 证据分节（JS 注入） -->
+    <div id="evList" style="margin-top:6px"></div>
+
+    <div class="disp-note" style="background:var(--warn-100);color:var(--warn-700)">本页为技术验证证据，<b>不构成录用担保或背调结论</b>；最终判断与背景核实请你方完成。该评估如何做出 → <a>可解释入口</a></div>
+
+    <button class="btn primary lg" style="width:100%;margin-top:14px" onclick="goOrder('cand')">推进这位 · 就此岗下单 →</button>
+    <button class="btn ghost" style="width:100%" onclick="closeDrawer()">先看别的，仅收藏</button>
+  </div>
+</aside>
+
+<!-- ===================== 下单 wizard ===================== -->
+<div class="modal" id="modalOrder">
+  <div class="scrim on" style="position:absolute" onclick="closeOrder()"></div>
+  <div class="modal-card">
+    <div class="steps" id="stepsBar"></div>
+    <div class="modal-body">
+      <!-- 步骤 1 概要 -->
+      <div class="step" data-step="1">
+        <h3 style="font-size:17px;font-weight:600">这一单的费用与风险返还，一屏说清。</h3>
+        <p style="color:var(--text-2);font-size:14px;margin-top:6px">成单 = 候选人 offer 并入职。未成单不收成单费。</p>
+        <div style="margin-top:18px">
+          <div class="fee-row"><span class="k">岗位</span><span class="v" style="font-weight:500">海外 AI 后端工程师（远程）</span></div>
+          <div class="fee-row"><span class="k">交付方式</span><span class="v" id="odType" style="font-weight:500">从已验证推进</span></div>
+          <div class="fee-row"><span class="k">候选人与你是否有竞争冲突</span><span class="v" style="font-weight:500">无 · 已核排他</span></div>
+          <div class="fee-row"><span class="k">成单费（按薪资带 20–30%）</span><span class="v tnum" id="odFee">约 ¥9.8 万<small>示例值 · 以《服务委托书》为准</small></span></div>
+          <div class="fee-row"><span class="k">启动承诺金（可抵扣成单费）</span><span class="v tnum">¥2,000<small>未成单按协议退还</small></span></div>
+          <div class="fee-row" style="border-bottom:none"><span class="k">保用期</span><span class="v" style="font-weight:500">30 天 · 不合适可换 / 退</span></div>
+        </div>
+        <div style="margin-top:18px;display:flex;gap:10px;justify-content:flex-end">
+          <button class="btn secondary" onclick="closeOrder()">先不下单</button>
+          <button class="btn primary" onclick="wizStep(2)">下一步 · 看条款</button>
+        </div>
+      </div>
+
+      <!-- 步骤 2 条款 -->
+      <div class="step hidden" data-step="2">
+        <h3 style="font-size:17px;font-weight:600">条款须展开后勾选——承诺不是广告。</h3>
+        <div style="margin-top:12px">
+          <div class="ev open" id="termsCard">
+            <button class="ev-head" onclick="toggleEv(this)">
+              <span class="lab">《服务委托书》核心条款</span>
+              <span class="when">展开阅读</span><span class="chev">⌄</span>
+            </button>
+            <div class="ev-body"><div><div class="ev-inner" style="font-size:13px;line-height:1.9">
+              <div class="k">成单定义</div>候选人 offer 并被录用入职。
+              <div class="k" style="margin-top:8px">风险返还</div>入职后 30 天内，经本岗工作表现复核无法胜任——<b>优先免费换下一名已验证候选人；或按协议退还成单费</b>。本页为产品与服务说明，不构成录用、offer 或背调结果的任何保证。
+              <div class="k" style="margin-top:8px">来源与排他</div>候选人来源登记唯一；成交起 3–6 个月保护期内，同岗重复推荐不计费。
+              <div class="k" style="margin-top:8px">数据与授权</div>候选人已就本岗单独授权最小化披露；对海外雇主跨境披露按《个人信息保护法》办理，可随时撤回。
+            </div></div></div>
+          </div>
+          <label style="display:flex;gap:10px;align-items:flex-start;margin-top:14px;cursor:pointer;font-size:14px">
+            <input type="checkbox" id="agree" onchange="agreeToggled()" style="margin-top:3px;width:16px;height:16px;accent-color:var(--teal-600)">
+            <span>我已阅读并同意上述条款，知悉"成单 = offer + 入职"，知悉启动承诺金可抵扣、未成单按协议退还。</span>
+          </label>
+        </div>
+        <div style="margin-top:18px;display:flex;gap:10px;justify-content:flex-end">
+          <button class="btn secondary" onclick="wizStep(1)">返回</button>
+          <button class="btn primary" id="payBtn" disabled onclick="wizStep(3)">阅读并确认条款 → 支付启动承诺金 ¥2,000</button>
+        </div>
+      </div>
+
+      <!-- 步骤 3 支付 -->
+      <div class="step hidden" data-step="3">
+        <h3 style="font-size:17px;font-weight:600">支付启动承诺金</h3>
+        <p style="color:var(--text-2);font-size:14px;margin-top:6px">¥2,000 从成单费中抵扣；未成单按协议退还。收款后服务单立即建立。</p>
+        <div class="card" style="margin-top:16px;background:var(--surface-inset);border:1px dashed var(--hairline-strong)">
+          <div style="display:flex;justify-content:space-between;font-size:14px"><span class="k" style="color:var(--text-2)">应付</span><b class="tnum" style="font-size:20px">¥2,000.00</b></div>
+          <div style="font-size:12px;color:var(--text-3);margin-top:6px">演示环境：点击下方按钮即模拟支付，不产生真实扣款。</div>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end">
+          <button class="btn secondary" onclick="wizStep(2)">返回</button>
+          <button class="btn primary lg" onclick="payDone()">确认支付 →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== 盖章成功态 ===================== -->
+<div class="stamp-overlay" id="stampOk">
+  <div class="stamp-card">
+    <div class="stamp-circle"><svg width="28" height="28" viewBox="0 0 10 10"><path d="M1 5.5 4 8l5-6" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div style="font-size:17px;font-weight:600">承诺已生效</div>
+    <div style="color:var(--text-2);font-size:13px;margin-top:6px" id="stampTxt">启动承诺金已收 · 服务单已建立 · 进入保用期计时</div>
+    <button class="btn secondary" style="margin-top:20px" onclick="finishStamp()">查看我的服务单 →</button>
+  </div>
+</div>
+
+<!-- ===================== 换退确认层 ===================== -->
+<div class="modal" id="modalWarr">
+  <div class="scrim on" style="position:absolute" onclick="closeWarr()"></div>
+  <div class="modal-card" style="width:min(480px,100%)">
+    <div class="modal-body" style="padding:24px">
+      <h3 style="font-size:17px;font-weight:600" id="warrTitle">申请换人</h3>
+      <p style="color:var(--text-2);font-size:14px;margin-top:8px" id="warrTxt">优先免费再推一名已验证候选人。申请将转人工复核（响应时限 1 个工作日），不做一键动作。</p>
+      <div style="margin-top:18px;display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn secondary" onclick="closeWarr()">取消</button>
+        <button class="btn primary" id="warrOk" onclick="warrDone()">确认提交申请</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== 信息层（定义/细则） ===================== -->
+<div class="modal" id="modalInfo">
+  <div class="scrim on" style="position:absolute" onclick="closeInfo()"></div>
+  <div class="modal-card" style="width:min(520px,100%)">
+    <div class="modal-body" style="padding:24px">
+      <h3 style="font-size:17px;font-weight:600" id="infoTitle">"已验证"的定义</h3>
+      <div style="font-size:14px;color:var(--text-1);margin-top:10px;line-height:1.9" id="infoBody"></div>
+      <div style="margin-top:18px;display:flex;justify-content:flex-end"><button class="btn secondary" onclick="closeInfo()">知道了</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="foot wrap" style="max-width:960px;margin:0 auto;padding-bottom:120px">
+  <b>口径与边界（原样呈现，不粉饰）：</b>"已验证" = 候选人本人授权 + 自产证据 + AI 辅助评估与真人多轮技术验证 + 人工复核终审；不等于背调，也不等于录用保证。失败只落"未达本岗"，不对外展示贬低理由。数据示例（6,685 / 2 名已验证等）为原型演示种子，实际界面一律取真实字段。
+  <br><br>本原型为产品交互演示，非商业承诺；具体权利义务以双方签署的《服务委托书》为准。
+</div>
+
+<script>
+/* ===================== 数据（原型种子 · 诚实标注） ===================== */
+var PEOPLE = {
+  lin:{who:'Lin', meta:'后端 / 推理服务优化 · 8 年',
+    why:'两轮真人技术问答 + 一次实操全部落在推理服务与高并发上，与本岗 vLLM 方向对得上。边界如实写：未见大规模生产压测与英文协作样本——建议面试覆盖。',
+    evs:[
+      {lab:'E1 · 自证材料与抽查', when:'09-01', open:true, body:['作品 / 开源 / 上线产品','vLLM serving 优化 PR 合入上游（可核验链接）','上线推荐服务 QPS 曲线（脱敏）','抽查结论：时间线连贯，未见代做痕迹','来源：可核验原件 ↗']},
+      {lab:'E2 · 真人多轮技术问答（2 轮）', when:'09-02 · 共 86 分钟', open:false, body:['追问点：推理服务扩缩容与冷启动权衡','卡点记录：对 k8s HPA 细节一度含糊，追问后能推到问题本质','作答质量：两轮均达到本岗期望线（人复核标注）']},
+      {lab:'E3 · 实操 / 编码任务', when:'09-03', open:false, body:['复现一个推理服务 QPS 瓶颈并修复','提交：可运行 patch + 压测前后对比','判定：修复有效，方法可复现']},
+      {lab:'E4 · 反作弊说明', when:'09-03', open:false, body:['核查项包括：作答环境 / 会话一致性 / 代码溯源','结果：未发现异常','措辞限定：不下"100% 真人"断言']},
+      {lab:'E5 · 沟通与意愿', when:'09-04', open:false, body:['远程与时区重叠：可行，已验证时段稳定在线','薪资预期：落在本岗带内','排他：未在接触与本岗冲突的别家（已登记）']},
+      {lab:'E6 · 人工复核备注', when:'09-04', open:false, body:['复核员：A-07（署名）','终审：通过 · 判定为本岗可约面','备注：面试请补一次英文书面样例，覆盖缺口']}
+    ]},
+  wang:{who:'Wang', meta:'Python / 分布式任务 · 6 年 · 北美远程',
+    why:'真实做过跨时区异步协作，是该岗加分项；Python 后端与消息队列扎实。本轮未含编码实操，我们如实标注——建议约面用一次 onsite 实作覆盖。',
+    evs:[
+      {lab:'E1 · 自证材料与抽查', when:'08-28', open:true, body:['3 年远程协作记录（雇主出具 · 去敏）','分布式任务调度项目 2 个（可核验）','抽查结论：与描述一致']},
+      {lab:'E2 · 真人多轮技术问答（1 轮）', when:'08-29', open:false, body:['主题：Celery 调度可靠性 / 消息丢失场景','作答质量：达本岗期望线（人复核标注）']},
+      {lab:'E3 · 实操任务', when:'—', open:false, body:['本卷未含实操任务','建议：以一次 onsite 实作覆盖（如实标注，不凑数）']},
+      {lab:'E4 · 反作弊说明', when:'08-29', open:false, body:['核查项包括：作答环境 / 会话一致性','结果：未发现异常']},
+      {lab:'E5 · 沟通与意愿', when:'08-30', open:false, body:['远程与时区：习惯美西重叠时段','薪资预期：带内','到岗：可 2 周内']},
+      {lab:'E6 · 人工复核备注', when:'08-31', open:false, body:['复核员：A-07','终审：通过（实操缺口建议补测）']}
+    ]}
+};
+
+/* ===================== 视图 ===================== */
+function show(v){
+  document.querySelectorAll('.view').forEach(function(s){s.classList.remove('on')});
+  var el=document.getElementById('view-'+v); if(el)el.classList.add('on');
+  document.querySelectorAll('#nav button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-v')===v)});
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+document.getElementById('nav').addEventListener('click',function(e){
+  var b=e.target.closest('button'); if(!b)return;
+  if(b.getAttribute('data-v')==='jobs')goJob(); else if(b.getAttribute('data-v')==='orders')show('orders'); else show('pool');
+});
+
+function goJob(){show('jobs')}
+
+/* 稀有度条（演示填充，可核验口径在下方） */
+window.addEventListener('load',function(){
+  setTimeout(function(){document.getElementById('rareBar').style.width='0.03%'},120);
+  var h=location.hash.replace('#','');
+  if(['pool','jobs','orders','warranty'].indexOf(h)>-1){show(h)}
+  else if(h==='ev-lin'||h==='ev-wang'){goJob();openEvidence(h.slice(3))}
+});
+
+/* ===================== 证据抽屉 ===================== */
+function openEvidence(key){
+  var p=PEOPLE[key]; document.getElementById('dWho').textContent=p.who;
+  document.getElementById('dMeta').textContent='本次验证针对：海外 AI 后端工程师（远程）';
+  document.getElementById('dWhy').textContent=p.why;
+  var box=document.getElementById('evList'); box.innerHTML='';
+  p.evs.forEach(function(ev){
+    box.appendChild(buildEv(ev));
+  });
+  openScrim('scr-ev'); document.getElementById('drawer').classList.add('on');
+}
+function buildEv(ev){
+  var root=document.createElement('div'); root.className='ev'+(ev.open?' open':'');
+  var h=document.createElement('button'); h.className='ev-head';
+  h.innerHTML='<span class="lab">'+ev.lab+'</span><span class="when">'+ev.when+'</span><span class="chev">⌄</span>';
+  h.onclick=function(){root.classList.toggle('open')};
+  var body=document.createElement('div'); body.className='ev-body';
+  var inner='<div><div class="ev-inner"><ul>';
+  ev.body.forEach(function(t){inner+='<li><span></span><span>'+t+'</span></li>'});
+  inner+='</ul></div></div>'; body.innerHTML=inner;
+  root.appendChild(h); root.appendChild(body); return root;
+}
+function closeDrawer(){document.getElementById('drawer').classList.remove('on');closeScrim('scr-ev')}
+function toggleEv(head){head.closest('.ev').classList.toggle('open')}
+
+/* ===================== 下单 wizard ===================== */
+var curCand='lin';
+function goOrder(how){
+  curCand = how==='cand'||how==='lin'?'lin':how==='wang'?'wang':how==='pool'||how==='search'?how:curCand;
+  var t=document.getElementById('odType');
+  t.textContent = curCand==='lin'?'从已验证推进 · Lin':curCand==='wang'?'从已验证推进 · Wang':curCand==='pool'?'从我的原始池定向验证':'委托按岗寻访 + 验证';
+  wizStep(1); document.getElementById('modalOrder').classList.add('on');
+}
+function closeOrder(){document.getElementById('modalOrder').classList.remove('on')}
+function wizStep(n){
+  document.querySelectorAll('#modalOrder .step').forEach(function(s){s.classList.toggle('hidden',+s.getAttribute('data-step')!==n)});
+  var steps=[{n:1,l:'概要'},{n:2,l:'条款'},{n:3,l:'支付'}];
+  var bar=document.getElementById('stepsBar'); bar.innerHTML='';
+  steps.forEach(function(s,i){
+    if(i>0){var b=document.createElement('div');b.className='bar'+(s.n<=n?' on':'');bar.appendChild(b)}
+    var el=document.createElement('div');el.className='st'+(s.n<n?' done':s.n===n?' now':'');
+    el.textContent=s.n<n?'✓':s.n;bar.appendChild(el);
+    var lb=document.createElement('span');lb.className='lbl'+(s.n===n?'':' cap');lb.textContent=s.l;bar.appendChild(lb);
+  });
+}
+function agreeToggled(){document.getElementById('payBtn').disabled=!document.getElementById('agree').checked}
+function payDone(){
+  document.getElementById('modalOrder').classList.remove('on');
+  var so=document.getElementById('stampOk'); so.classList.add('on');
+  document.getElementById('stampTxt').textContent = '启动承诺金已收 · 服务单已建立 · 进入保用期计时';
+  showOrderCreated(curCand==='lin'?'推进 Lin':curCand==='wang'?'推进 Wang':'定向验证 / 寻访');
+}
+function showOrderCreated(tag){
+  document.getElementById('orderLiveEmpty').classList.add('hidden');
+  var live=document.getElementById('orderLive'); live.classList.remove('hidden');
+  document.getElementById('orderCand').textContent=tag;
+}
+function finishStamp(){document.getElementById('stampOk').classList.remove('on');show('orders')}
+
+/* ===================== 保用期 ===================== */
+function drawRing(){
+  var d=18,r=7.2,c=2*Math.PI*r;
+  var svg='<svg width="120" height="120" viewBox="0 0 18 18" style="transform:rotate(-90deg)">'
+    +'<circle cx="9" cy="9" r="'+r+'" fill="none" stroke="var(--surface-inset)" stroke-width="1.6"/>'
+    +'<circle id="ringArc" cx="9" cy="9" r="'+r+'" fill="none" stroke="var(--teal-600)" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="'+c+'" stroke-dashoffset="'+c*(1-0.4)+'"/>'
+    +'</svg>'
+    +'<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">'
+    +'<div class="bignum tnum" style="font-size:30px">18</div><div style="font-size:12px;color:var(--text-2)">天剩余</div></div>';
+  document.getElementById('ring').innerHTML='<div style="position:relative;width:120px;margin:0 auto">'+svg+'</div>';
+}
+function openWarrantyConfirm(kind){
+  var title={'ok':'确认胜任 · 结算尾款','swap':'申请换人','refund':'申请退款'}[kind];
+  var txt={'ok':'复核提交后，尾款按《服务委托书》结算，保用期窗口正常结束。',
+    'swap':'优先免费再推一名已验证候选人；申请转人工复核（响应时限 1 个工作日），不做一键动作。',
+    'refund':'按协议条款退还成单费；申请转人工复核，核对入职与保用期记录后发起。'}[kind];
+  document.getElementById('warrTitle').textContent=title;
+  document.getElementById('warrTxt').textContent=txt;
+  document.getElementById('warrOk').dataset.kind=kind;
+  document.getElementById('modalWarr').classList.add('on');
+}
+function closeWarr(){document.getElementById('modalWarr').classList.remove('on')}
+function warrDone(){
+  closeWarr();
+  var so=document.getElementById('stampOk'); so.classList.add('on');
+  document.getElementById('stampTxt').textContent='已受理，转人工复核（响应时限 1 个工作日）。不制造"一键退款"的错觉。';
+}
+/* 复核评分点 */
+document.querySelectorAll('.rv-seg').forEach(function(seg){
+  for(var i=0;i<4;i++){var d=document.createElement('div');d.className='dot';d.dataset.v=i+1;
+    d.onclick=function(){seg.querySelectorAll('.dot').forEach(function(x){x.classList.toggle('on',+x.dataset.v<=+this.dataset.v)},this)};
+    seg.appendChild(d);}
+});
+
+/* ===================== 信息层 ===================== */
+function openInfo(k){
+  var title,body;
+  if(k==='def'){
+    title='"已验证"的定义';
+    body='<b>已验证</b> = 候选人本人授权 + 自产证据 + AI 辅助评估与真人多轮技术验证 + 人工复核终审。<br><br>'
+       +'<span class="badge solo" style="margin:4px 0"><span class="ring"><i></i></span>孤证</span>　单一来源、未交叉证实，不计入已验证。<br>'
+       +'<span class="badge pending"><span class="ring">+</span>证据待补</span>　尚缺材料，补齐后再判。<br><br>'
+       +'注意：已验证 <b>不等于背调</b>（不含学历 / 无犯罪 / 简历真伪核验），也不等于录用保证。';
+  }else{
+    title='风险返还细则';
+    body='入职后 <b>30 天</b>内，经本岗工作表现复核无法胜任：<b>优先免费换下一名已验证候选人；或按协议退还成单费</b>。<br><br>'
+       +'成单 = 候选人 offer 并被录用入职，此时才收取成单费（20–30%）。启动承诺金可抵扣、未成单按协议退还。<br><br>'
+       +'本页为产品与服务说明，不构成录用、offer 或背调结果的任何保证；具体权利义务以双方签署的《服务委托书》为准。';
+  }
+  document.getElementById('infoTitle').textContent=title;
+  document.getElementById('infoBody').innerHTML=body;
+  document.getElementById('modalInfo').classList.add('on');
+}
+function closeInfo(){document.getElementById('modalInfo').classList.remove('on')}
+
+/* scrim helpers */
+function openScrim(id){document.getElementById(id).classList.add('on')}
+function closeScrim(id){document.getElementById(id).classList.remove('on')}
+
+drawRing();
+</script>
+</body>
+</html>

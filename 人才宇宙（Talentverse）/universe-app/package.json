@@ -1,0 +1,25 @@
+{
+  "name": "talentverse-universe-app",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "人才宇宙 Talentverse — Agent 驱动分析平台 · 双端对话式高保真原型（候选端建档 / 雇主端采信）",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "typecheck": "tsc -b --noEmit",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "puppeteer-core": "^25.10.0",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11"
+  }
+}
