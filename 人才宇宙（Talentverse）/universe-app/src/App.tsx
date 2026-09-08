@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { OrbitView } from './views/OrbitView'
 import { Backdrop } from './components/Backdrop'
 import { AppWorkspace } from './components/Workspace'
+import { IdentityAnchor } from './components/IdentityAnchor'
 import { load, save, clearAll } from './lib/storage'
 import type { End } from './types'
 
@@ -63,9 +64,8 @@ export function App() {
           >
             重置
           </button>
-          <div className="universe-note" style={{ marginLeft: 'auto' }}>
-            同一内核 · 两端不同入口 · 档案共用
-          </div>
+          <div className="universe-note">同一内核 · 两端不同入口 · 档案共用</div>
+          <IdentityAnchor end={end} />
         </div>
       </div>
 

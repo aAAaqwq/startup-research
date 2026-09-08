@@ -1,9 +1,12 @@
-// 两端工作台（Act7）：frame + 可收起侧栏(历史对话/新建) + 面板
-// 雇主：搜索 / JD星球 / 简历池 / 面试空间；候选：对话 / 简历 / 面试空间
+// 两端工作台（Act7 + Act8）：三栏 Agent 工作台
+// Act8：frame 改为 grid 左轨(240可收) | 中对话+事件流 | 右 EvidenceWorkbench(320–380)
+// ≤980 右栏降为底部抽屉 + 浮钮；≤720 单列。
+// 现有主流程（候选建档→档案→雇主搜索→约面→采信）与 localStorage schema 原样兼容。
 
 import { useEffect, useState } from 'react'
 import { SideChrome } from './SideChrome'
 import { DossierModal, type DossierData } from './Dossier'
+import { EvidenceWorkbench, type WbArtifact } from './EvidenceWorkbench'
 import { CandidateView } from '../views/CandidateView'
 import { EmployerView } from '../views/EmployerView'
 import { buildArchive, buildEmpResult } from '../data/universe'
@@ -11,6 +14,8 @@ import { recordJd, readJds, readInvites, sendInvite, decideInvite } from '../lib
 import { deriveLabel, pushSnapshot, readHist, type ConvSnapshot } from '../lib/history'
 import { load, save } from '../lib/storage'
 import { candGreeting, empGreeting } from '../engine/flows'
+import type { Msg } from '../msg'
+import type { GateProposal } from '../gates'
 import type { End } from '../types'
 
 function dossierOf(cand: { id: string; name: string; canDo: string; reasons: { verified: boolean; text: string }[]; boundaries: string[]; tags: string[] }): DossierData {
@@ -29,6 +34,32 @@ function dossierOf(cand: { id: string; name: string; canDo: string; reasons: { v
 const convKey = (end: End) => (end === 'employer' ? 'emp' : 'cand')
 const modeKey = (end: End) => (end === 'employer' ? 'empMode' : 'candMode')
 
+/** 当前会话镜像（供右栏 EvidenceWorkbench 派生任务/产物） */
+function readConvState(end: 'candidate' | 'employer'): { step: number; msgs: Msg[] } | null {
+  const cur = load<{ step: number; msgs: Msg[] } | null>(convKey(end), null)
+  if (!cur || !cur.msgs || !Array.isArray(cur.msgs) || cur.msgs.length === 0) return null
+  return cur
+}
+
+/** 滚动到对话中某张卡并短暂闪光（Act4 已有 onPickStar 同款手法） */
+function flashTo(needle: string): void {
+  const els = Array.from(document.querySelectorAll<HTMLElement>('.panel,.hit,.jdplanet'))
+  const card = els.find((el) => el.textContent != null && el.textContent.includes(needle))
+  if (!card) return
+  card.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  card.classList.add('flash')
+  window.setTimeout(() => card.classList.remove('flash'), 1400)
+}
+
+/** 把 Composer 上方的闸门行滚进视野并闪光（右栏 C "去决定"跳转） */
+function flashGate(): void {
+  const el = document.querySelector<HTMLElement>('.gate')
+  if (!el) return
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  el.classList.add('flash')
+  window.setTimeout(() => el.classList.remove('flash'), 1400)
+}
+
 export function AppWorkspace({
   end,
   credits,
@@ -45,6 +76,9 @@ export function AppWorkspace({
   const [jds, setJds] = useState(readJds)
   const [invites, setInvites] = useState(readInvites)
   const [hist, setHist] = useState<ConvSnapshot[]>(() => readHist(end))
+  const [conv, setConv] = useState<{ step: number; msgs: Msg[] } | null>(() => readConvState(end))
+  const [gate, setGate] = useState<GateProposal | null>(null)
+  const [wbOpen, setWbOpen] = useState(false)
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     const saved = load<boolean>('sideCollapse', false)
     if (typeof window !== 'undefined' && window.matchMedia('(max-width:900px)').matches) return true
@@ -74,6 +108,7 @@ export function AppWorkspace({
   const refresh = () => {
     setInvites(readInvites())
     setHist(readHist(end))
+    setConv(readConvState(end))
   }
 
   const snapshotCurrent = () => {
@@ -90,7 +125,9 @@ export function AppWorkspace({
     save(modeKey(end), 'chat')
     setGen((g) => g + 1)
     setPanel('chat')
+    setConv({ step: 0, msgs: greet })
     setHist(readHist(end))
+    setWbOpen(false)
   }
 
   const restore = (snap: ConvSnapshot) => {
@@ -98,7 +135,35 @@ export function AppWorkspace({
     save(modeKey(end), snap.mode)
     setGen((g) => g + 1)
     setPanel('chat')
+    setConv(snap.conv)
     setHist(readHist(end))
+    setWbOpen(false)
+  }
+
+  // 右栏动作（直传稳定 setState：避免回调每次重建导致 ChatConv 清理 effect 重跑清掉播放定时器）
+  const jumpGate = () => {
+    setWbOpen(false)
+    setPanel('chat')
+    window.setTimeout(flashGate, 120)
+  }
+
+  const openArtifact = (a: WbArtifact) => {
+    if (a.act === 'panel') {
+      setPanel('interviews')
+      refresh()
+      return
+    }
+    // scroll → 回到对话（若在别的面板）后定位到对应卡
+    setPanel('chat')
+    window.setTimeout(() => {
+      if (a.marker) flashTo(a.marker)
+    }, 160)
+  }
+
+  const decideOne = (id: string, decision: 'accepted' | 'declined') => {
+    setInvites(decideInvite(id, decision))
+    if (decision === 'accepted') onCredit('BI/数分岗 · 面试确认 · 双向匹配')
+    refresh()
   }
 
   const myDossier = !isEmp ? dossierOf(buildEmpResult().candidates[0]) : null
@@ -117,9 +182,11 @@ export function AppWorkspace({
             setInvites(sendInvite('c1', '阿哲'))
             onCredit('BI/数分岗 · 出海 SaaS · 面试邀约已发')
           }}
+          onConvSync={setConv}
+          onGateSync={setGate}
         />
       ) : (
-        <CandidateView key={gen} credits={credits} onSwitch={onSwitch} />
+        <CandidateView key={gen} credits={credits} onSwitch={onSwitch} onConvSync={setConv} onGateSync={setGate} />
       )
     ) : null
 
@@ -173,10 +240,10 @@ export function AppWorkspace({
               {!isEmp ? <div className="row" style={{ background: 'rgba(255,255,255,.03)', borderRadius: 8, padding: '6px 10px' }}>{i.companyBlurb}</div> : null}
               {!isEmp && i.status === 'pending' ? (
                 <div className="acts">
-                  <button className="btn teal" onClick={() => { setInvites(decideInvite(i.id, 'accepted')); onCredit('BI/数分岗 · 面试确认 · 双向匹配') }}>
+                  <button className="btn teal" onClick={() => decideOne(i.id, 'accepted')}>
                     同意面试
                   </button>
-                  <button className="btn out" onClick={() => setInvites(decideInvite(i.id, 'declined'))}>婉拒</button>
+                  <button className="btn out" onClick={() => decideOne(i.id, 'declined')}>婉拒</button>
                 </div>
               ) : null}
             </div>
@@ -204,8 +271,23 @@ export function AppWorkspace({
     )
   }
 
+  const wbCount = (gate != null ? 1 : 0) + invites.filter((i) => i.status === 'pending').length
+
+  const workbench = (
+    <EvidenceWorkbench
+      end={end}
+      conv={conv}
+      invites={invites}
+      jds={jds}
+      gate={gate}
+      onSelectArtifact={openArtifact}
+      onDecideInvite={decideOne}
+      onJumpGate={jumpGate}
+    />
+  )
+
   return (
-    <div className="frame" style={{ gridTemplateColumns: collapsed ? '70px 1fr' : '248px 1fr' }}>
+    <div className={`frame${collapsed ? ' side-narrow' : ''}`}>
       <SideChrome
         header={isEmp ? '雇主 · 工作台' : '候选 · 工作台'}
         items={items}
@@ -232,6 +314,33 @@ export function AppWorkspace({
         {body}
         {secondary}
       </div>
+
+      <aside className="wb-col" aria-label="Agent 证据工作台">
+        {workbench}
+      </aside>
+
+      <button
+        type="button"
+        className="wb-fob"
+        onClick={() => setWbOpen((o) => !o)}
+        aria-label="打开证据工作台"
+        aria-expanded={wbOpen}
+      >
+        <span className="wb-fob-ic">◫</span>
+        <span className="wb-fob-t">工作台</span>
+        {wbCount > 0 ? <span className="wb-fob-n">{wbCount}</span> : null}
+      </button>
+
+      <div className={`wb-drawer${wbOpen ? ' on' : ''}`} role="dialog" aria-label="证据工作台">
+        <div className="wb-drawer-hd">
+          <span className="wb-drawer-title">Agent 证据工作台</span>
+          <button type="button" className="btn out" onClick={() => setWbOpen(false)}>
+            收起
+          </button>
+        </div>
+        <div className="wb-drawer-bd">{workbench}</div>
+      </div>
+
       <DossierModal data={sel} open={sel != null} onClose={() => setSel(null)} />
     </div>
   )

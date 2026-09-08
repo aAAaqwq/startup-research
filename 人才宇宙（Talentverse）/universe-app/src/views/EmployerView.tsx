@@ -5,12 +5,35 @@ import { ChatConv, type ConvCfg } from '../components/ChatConv'
 import { Portal } from '../components/Portal'
 import { SkyField, type SkyStarDef } from '../components/SkyField'
 import { empGreeting, empReply } from '../engine/flows'
-import { employerChips } from '../data/universe'
+import { employerChips, buildEmpResult } from '../data/universe'
 import { recordSignal } from '../lib/stats'
 import { load, save } from '../lib/storage'
+import type { Msg } from '../msg'
+import type { GateProposal } from '../gates'
 import type { End, SignalKind } from '../types'
 
 type Phase = 'idle' | 'scan' | 'silence' | 'lit'
+
+/** 雇主「约面」= 发外部动作 → 人类闸门（draft + 原文对照），确认才执行 flows 原 meet。 */
+function empMeetGate(act: string): GateProposal | null {
+  if (act !== 'meet') return null
+  const hit = buildEmpResult().candidates[0]
+  return {
+    kind: 'external',
+    act: 'meet',
+    step: 1,
+    title: '约面 #1 阿哲 · 发外部（双向、中性）',
+    why: '把可约时段 + 见面说明发到对方档案端；只有他本人同意出示联系方式后才回执给你 —— 不擅自外发他的信息。',
+    draft: [
+      '发给 #1 阿哲：可约时段一句话 + 双向见面的中性说明（不吹不贬、不升温）。',
+      '回执条件：经他本人同意出示联系方式后，30 分钟内回执到本端面试空间。',
+    ],
+    against: {
+      label: '原文对照 · 他档案已验证部分',
+      lines: hit.reasons.map((r) => (r.verified ? '✓ ' : '○ ') + r.text).concat(hit.boundaries),
+    },
+  }
+}
 
 export function EmployerView({
   credits,
@@ -18,12 +41,16 @@ export function EmployerView({
   onSwitch,
   onSearch,
   onMeet,
+  onConvSync,
+  onGateSync,
 }: {
   credits: string[]
   onCredit: (credit: string) => void
   onSwitch: (end: End) => void
   onSearch?: () => void
   onMeet?: () => void
+  onConvSync?: (s: { step: number; msgs: Msg[] }) => void
+  onGateSync?: (g: GateProposal | null) => void
 }) {
   const storedStep = load<{ step: number } | null>('emp', null)?.step ?? 0
   const [mode, setMode] = useState<'portal' | 'chat'>(() => {
@@ -105,6 +132,7 @@ export function EmployerView({
       if (/原件|核|证据/.test(text)) return 'verify'
       return 'meet'
     },
+    approvalFor: empMeetGate,
   }
 
   if (mode === 'portal') {
@@ -166,7 +194,7 @@ export function EmployerView({
           </div>
         ) : null}
       </div>
-      <ChatConv cfg={cfg} credits={credits} onCredit={onCredit} onSignal={handleSignal} onSwitch={onSwitch} />
+      <ChatConv cfg={cfg} credits={credits} onCredit={onCredit} onSignal={handleSignal} onSwitch={onSwitch} onStateChange={onConvSync} onGateChange={onGateSync} />
     </>
   )
 }

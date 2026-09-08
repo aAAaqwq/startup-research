@@ -520,3 +520,162 @@ body::before,body::after{content:none}
 .side.narrow .cap2,.side.narrow .si span,.side.narrow .hist,.side.narrow .rail-new span,.side.narrow .side-top .t{display:none}
 .side.narrow .si{justify-content:center;padding:9px 0}
 .side.narrow .collap{margin:0 auto}
+
+/* ============================================================
+   Act8 · 三栏 Agent 工作台 + EvidenceWorkbench + 人类闸门 + IdentityAnchor
+   断点：≥1280 三栏满配；981–1279 右栏收窄；721–980 右栏=底部抽屉+浮钮；
+   <720 单列 + 抽屉全屏覆盖。
+   闸门语义色 = amber 虚线族（仅"待真人拍板"），注释 ≠ 证据档三色
+   （验青=已验证 / 虚线琥珀=孤证 / 灰=待补）。铁律：只动 transform/opacity。
+   ============================================================ */
+:root{
+  --rail:248px; --wb:364px;                 /* 左轨 / 右证据工作台宽 */
+  --gate-amber:#E8B878; --gate-amber-dim:rgba(232,184,120,.13);
+}
+@media (min-width:981px) and (max-width:1279px){ :root{ --rail:236px; --wb:330px } }
+@media (max-width:980px){ :root{ --rail:236px; --wb:0px } }     /* 右栏降为抽屉 */
+@media (max-width:720px){ :root{ --rail:0px } }                 /* 单列 */
+
+/* —— 顶栏放宽到全宽，容纳 IdentityAnchor —— */
+.topbar-in{max-width:none;margin:0;padding:0 20px;gap:10px}
+
+/* —— 三栏 frame —— */
+.frame{max-width:none;margin:0;display:grid;grid-template-columns:var(--rail) minmax(0,1fr) var(--wb);gap:0;min-height:calc(100vh - 60px)}
+.frame.side-narrow{ --rail:70px }   /* 最后覆盖：收窄左轨（含折叠态） */
+.wb-col{display:block;min-width:0;border-left:1px solid var(--hairline);
+  background:linear-gradient(180deg,rgba(255,255,255,.014),transparent)}
+@media (max-width:980px){ .wb-col{display:none} }
+
+/* composer 只落在中栏（不再横跨整宽/盖住右栏与左轨） */
+.composer{left:var(--rail);right:var(--wb);max-width:none}
+.composer-in{max-width:820px}
+@media (max-width:720px){ .composer{left:0;right:0} }
+
+/* —— 右栏 EvidenceWorkbench —— */
+.wb-col{position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto}
+.wb{padding:16px 14px 52px;display:flex;flex-direction:column;gap:12px}
+.wb-over{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--teal-500);padding:2px 2px 0}
+.wb-sec{border:1px solid var(--hairline);border-radius:var(--r-lg);background:rgba(255,255,255,.018);padding:11px 12px}
+.wb-sec-hd{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+  font-size:11px;letter-spacing:.06em;color:var(--text-3);margin-bottom:8px}
+.wb-hint{font-size:10px;letter-spacing:0;color:var(--text-3);text-transform:none}
+.wb-status{font-size:11px;letter-spacing:0;color:var(--text-2)}
+.wb-status.running{color:var(--teal-700)}
+.wb-status.waiting{color:var(--warn-700)}
+.wb-status.done{color:var(--teal-700);opacity:.9}
+.wb-status.idle{color:var(--text-3)}
+
+/* A · 步骤轨道（PipelineCard 步骤语义常驻化，轻量复刻，不改卡片组件） */
+.wb-steps{display:flex;flex-direction:column;gap:3px}
+.ws{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:12px;color:var(--text-3)}
+.ws .ws-dot{width:15px;height:15px;border-radius:50%;border:1px solid var(--text-disabled);flex:none;
+  display:flex;align-items:center;justify-content:center;font-size:9px}
+.ws.done{color:var(--text-2)}
+.ws.done .ws-dot{background:var(--teal-100);border-color:var(--teal-200);color:var(--teal-700)}
+.ws.active{color:var(--text-1)}
+.ws.active .ws-dot{background:var(--teal-600);border-color:var(--teal-600);color:#04120d;animation:popDot .25s var(--eo)}
+.ws.active .ws-bar{width:7px;height:7px;border-radius:50%;background:var(--teal-500);animation:bl 1s infinite;flex:none}
+.ws .ws-label{flex:1;min-width:0}
+.ws .ws-meta{font-size:10px;color:var(--text-3)}
+
+/* B · 产物 */
+.wb-artifacts{display:flex;flex-direction:column;gap:6px}
+.wb-art{display:flex;gap:9px;align-items:center;width:100%;text-align:left;border:1px solid var(--hairline);
+  border-radius:var(--r-md);background:var(--surface);padding:8px 10px;transition:border-color .12s var(--eo)}
+.wb-art:hover{border-color:var(--teal-500)}
+.wb-art-ic{flex:none;width:24px;height:24px;border-radius:7px;background:var(--teal-100);color:var(--teal-700);
+  display:flex;align-items:center;justify-content:center;font-size:12px}
+.wb-art-bd{flex:1;min-width:0}
+.wb-art-t{display:block;font-size:12.5px;font-weight:600;color:var(--text-1)}
+.wb-art-s{display:block;font-size:11px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wb-art-badge{flex:none;font-size:10px;background:var(--warn-100);color:var(--warn-700);border-radius:var(--r-pill);padding:1px 7px}
+.wb-art-go{flex:none;color:var(--text-3);font-size:12px}
+.wb-empty{font-size:11.5px;color:var(--text-3);line-height:1.7;padding:2px 0}
+
+/* C · 边界 / 计价行（amber 虚线 = 闸门，不是证据档） */
+.wb-bill{display:flex;flex-direction:column;gap:5px}
+.wb-bill-row{display:flex;gap:8px;align-items:baseline;font-size:12px}
+.wb-bill-tag{flex:none;font-size:10px;font-weight:700;color:var(--text-2);
+  border:1px dashed var(--hairline-strong);border-radius:var(--r-pill);padding:0 7px}
+.wb-bill-tag.seal{color:var(--seal);border-color:rgba(226,91,79,.45)}
+.wb-bill-t{color:var(--text-2);line-height:1.5}
+.wb-bill-note{font-size:10.5px;color:var(--text-3);line-height:1.7;border-top:1px dashed var(--hairline);margin-top:4px;padding-top:6px}
+
+/* —— 闸门 amber 虚线族（≠ 证据档色）：Composer 上决定行 + 右栏 C —— */
+.gate{margin:0;padding:10px 16px 2px;border-top:1px solid rgba(232,184,120,.35)}
+.gate-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.gate-tag{font-size:11px;font-weight:700;color:var(--warn-700);border:1px dashed var(--gate-amber);border-radius:var(--r-pill);padding:2px 10px}
+.gate-why{font-size:11.5px;color:var(--text-2);line-height:1.6;flex:1;min-width:200px}
+.gate-title{font-size:13.5px;font-weight:600;color:var(--text-1);margin-top:6px}
+.gate-pane{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+@media (max-width:560px){ .gate-pane{grid-template-columns:1fr} }
+.gate-block{border:1px dashed rgba(232,184,120,.4);background:var(--gate-amber-dim);border-radius:var(--r-md);padding:8px 10px}
+.gate-bt{font-size:10.5px;color:var(--warn-700);margin-bottom:4px}
+.gate-against-label{color:var(--text-2)}
+.gate-lines{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:3px}
+.gate-lines li{font-size:11.5px;color:var(--text-2);line-height:1.6}
+.gate-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:9px 0 6px}
+.gate-note{font-size:10.5px;color:var(--text-3)}
+
+/* 右栏 C 闸门镜像 */
+.wb-gatenow{border:1px dashed var(--gate-amber);background:var(--gate-amber-dim);border-radius:var(--r-md);padding:8px 10px}
+.wb-gatenow-hd{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.wb-tag{font-size:10px;font-weight:700;color:var(--warn-700)}
+.wb-gotenow{font-size:10.5px;color:var(--teal-700);border:1px solid var(--hairline-strong);border-radius:var(--r-pill);padding:2px 8px}
+.wb-gatenow-title{font-size:12px;font-weight:600;color:var(--text-1);margin-top:5px}
+.wb-gatenow-list{margin:4px 0 0;padding:0 0 0 14px;font-size:11px;color:var(--text-2);display:flex;flex-direction:column;gap:2px}
+.wb-gatenow-note{font-size:10px;color:var(--text-3);margin-top:4px}
+.wb-invite{border-top:1px dashed rgba(232,184,120,.25);margin-top:6px;padding-top:6px}
+.wb-invite-t{font-size:12px;color:var(--text-1)}
+.wb-invite-s{font-size:10.5px;color:var(--text-3);margin-top:2px;line-height:1.5}
+.wb-invite-acts{display:flex;gap:8px;margin-top:6px}
+.wb-pulse-dot{width:7px;height:7px;border-radius:50%;background:var(--warn-700);animation:bl 1s infinite;flex:none}
+
+/* —— 抽屉 + 浮钮（≤980 启用；<720 全屏覆盖） —— */
+.wb-fob{display:none;position:fixed;right:14px;bottom:110px;z-index:44;align-items:center;gap:7px;
+  background:#0E141E;border:1px solid var(--hairline-strong);border-radius:var(--r-pill);
+  color:var(--text-1);font-size:12.5px;padding:8px 13px;box-shadow:var(--sh-md)}
+.wb-fob-ic{color:var(--teal-500)}
+.wb-fob-n{margin-left:3px;background:var(--warn-700);color:#12100c;border-radius:var(--r-pill);padding:0 6px;font-size:10px;font-weight:700}
+.wb-drawer{display:none;position:fixed;left:0;right:0;bottom:0;z-index:48;flex-direction:column;
+  max-height:76vh;background:#0B101A;border-top:1px solid var(--hairline-strong);border-radius:var(--r-lg) var(--r-lg) 0 0;
+  box-shadow:var(--sh-lg);transform:translateY(104%);transition:transform .24s var(--eo)}
+.wb-drawer.on{transform:translateY(0)}
+.wb-drawer-hd{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--hairline)}
+.wb-drawer-title{font-weight:600;font-size:13px}
+.wb-drawer-bd{overflow-y:auto;padding-bottom:24px}
+@media (min-width:721px) and (max-width:980px){ .wb-fob{display:flex}.wb-drawer{display:flex} }
+@media (max-width:720px){
+  .frame{grid-template-columns:1fr}
+  .side{position:static;height:auto}
+  .composer{left:0;right:0}
+  .wb-col{display:none}
+  .wb-fob{display:flex;right:12px;bottom:112px}
+  .wb-drawer{display:flex;max-height:none;height:100%;border-radius:0}
+}
+/* —— IdentityAnchor（顶栏） —— */
+.identity-anchor{display:flex;align-items:center;gap:12px;flex:none;margin-left:auto;
+  border-left:1px solid var(--hairline);padding-left:14px}
+.ia-cell{display:flex;flex-direction:column;gap:1px;min-width:0}
+.ia-k{font-size:9.5px;letter-spacing:.12em;color:var(--text-3);text-transform:uppercase;white-space:nowrap}
+.ia-v{font-size:12px;color:var(--text-1);font-weight:500;white-space:nowrap}
+.ia-auth{display:flex;align-items:center;gap:6px}
+.ia-auth.on{color:var(--teal-700)}
+.ia-dot{width:7px;height:7px;border-radius:50%;background:var(--text-disabled);flex:none}
+.ia-auth.on .ia-dot{background:var(--teal-500);box-shadow:0 0 6px rgba(84,227,194,.7)}
+.ia-note{font-size:10px;color:var(--text-3);font-weight:400;margin-left:4px}
+.anchor-hint-wrap{position:relative}
+.anchor-hint{font-size:10.5px;color:var(--warn-700);border:1px dashed var(--gate-amber);border-radius:var(--r-pill);padding:2px 9px;white-space:nowrap}
+.anchor-hint:hover,.anchor-hint.on{background:var(--gate-amber-dim)}
+.anchor-pop{position:absolute;right:0;top:calc(100% + 8px);z-index:60;width:230px;background:#0E141E;
+  border:1px solid rgba(232,184,120,.4);border-radius:var(--r-md);padding:10px 12px;box-shadow:var(--sh-md)}
+.ap-row{display:flex;justify-content:space-between;gap:10px;font-size:11px;padding:3px 0}
+.ap-key{color:var(--warn-700);flex:none}
+.ap-val{color:var(--text-2);text-align:right}
+@media (max-width:1180px){ .universe-note{display:none}.ia-note{display:none} }
+@media (max-width:980px){ .identity-anchor{gap:9px;padding-left:10px}.ia-cell:nth-child(1){display:none} }
+@media (max-width:760px){ .anchor-hint{display:none}.identity-anchor{padding-left:8px} }
+
+/* 通用 flash（scroll 到对应产物/闸门时的定位闪烁；transform/opacity 纪律外只加 outline） */
+.hit.flash,.panel.flash,.jdplanet.flash,.gate.flash{outline:2px solid var(--teal-500);outline-offset:2px;transition:outline .2s var(--eo)}
+@media (prefers-reduced-motion:reduce){.wb-drawer{transition:none}}

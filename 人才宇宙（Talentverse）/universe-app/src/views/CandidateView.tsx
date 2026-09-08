@@ -9,7 +9,29 @@ import { candGreeting, candReply } from '../engine/flows'
 import { buildArchive, candidateChips } from '../data/universe'
 import { fmtRel, readStats, recordSignal } from '../lib/stats'
 import { load, save } from '../lib/storage'
+import type { Msg } from '../msg'
+import type { GateProposal } from '../gates'
 import type { End, SignalKind } from '../types'
+
+/** 候选「润色档案」= 改证据草稿 → 人类闸门；确认后走 flows 原 polish，驳回保持原文。 */
+function candPolishGate(act: string, step: number): GateProposal | null {
+  if (act !== 'polish' || step < 3) return null
+  return {
+    kind: 'evidence-mutation',
+    act: 'polish',
+    step,
+    title: '润色档案措辞（只改说法，不碰已验证字段）',
+    why: 'draft 不生效；确认后这条表述才会作为你的档案措辞出现，驳回则原文保持。没有补任何数字 / 日期 / 第二方。',
+    draft: [
+      '「我独立交付过一份带口径与提效度量的数据看板 —— 架构 3 页 + 12 指标定义有原件可核，上线后销售转化 21%→34% 有第二方周报佐证。」',
+      '「出海协作目前是缺口，标在待补，不假装有 —— 补一轮评估即可点亮。」',
+    ],
+    against: {
+      label: '当前档案一句话（原文）',
+      lines: ['「能独立把一个业务问题做成带口径与提效度量的数据看板（原件 + 第二方周报双支撑）；缺出海协作铁证。」'],
+    },
+  }
+}
 
 const EVENT_LABEL: Record<string, { ic: string; text: string }> = {
   onboard: { ic: '✦', text: '你的档案已入宇宙 · 授权出示后才会被看到' },
@@ -18,7 +40,17 @@ const EVENT_LABEL: Record<string, { ic: string; text: string }> = {
   view: { ic: '↑', text: '被打开查看（授权出示后）' },
 }
 
-export function CandidateView({ credits, onSwitch }: { credits: string[]; onSwitch: (end: End) => void }) {
+export function CandidateView({
+  credits,
+  onSwitch,
+  onConvSync,
+  onGateSync,
+}: {
+  credits: string[]
+  onSwitch: (end: End) => void
+  onConvSync?: (s: { step: number; msgs: Msg[] }) => void
+  onGateSync?: (g: GateProposal | null) => void
+}) {
   const storedStep = load<{ step: number } | null>('cand', null)?.step ?? 0
   const [mode, setMode] = useState<'portal' | 'chat'>(() => {
     const saved = load<'portal' | 'chat'>('candMode', 'portal')
@@ -64,6 +96,7 @@ export function CandidateView({ credits, onSwitch }: { credits: string[]; onSwit
       if (step === 2) return 'no'
       return 'text'
     },
+    approvalFor: candPolishGate,
   }
 
   if (mode === 'portal') {
@@ -150,7 +183,7 @@ export function CandidateView({ credits, onSwitch }: { credits: string[]; onSwit
         </div>
         <Notices stats={stats} />
       </div>
-      <ChatConv cfg={cfg} credits={credits} onSignal={handleSignal} />
+      <ChatConv cfg={cfg} credits={credits} onSignal={handleSignal} onStateChange={onConvSync} onGateChange={onGateSync} />
     </>
   )
 }
